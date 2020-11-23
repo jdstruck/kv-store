@@ -12,11 +12,11 @@ exception SystemException {
 /*   2: optional string content; */
 /* } */
 
-/* struct NodeID { */
-/*   1: string id; */
-/*   2: string ip; */
-/*   3: i32 port; */
-/* } */
+struct NodeID {
+  1: string id;
+  2: string ip;
+  3: i32 port;
+}
 
 struct KVPair {
   1: i32 key;

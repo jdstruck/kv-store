@@ -36,16 +36,15 @@ def main():
     # filename = sys.argv[3]
     # content = filename + "'s content"
     # file = RFile(RFileMetadata(filename, 0), content)
-    kvpair = KVPair(0, "zeroth")
-    kvdict = {}
-    kvdict[kvpair.key] = kvpair.val
-    print(kvpair.key, kvpair.val)
-    print(kvpair.val in kvdict) 
-    print(kvdict[kvpair.key])
-    kvdict[1] = "first"
-    print(kvdict[1])
 
+    kvpair = KVPair(0, "zeroth")
     client.put(kvpair)
+    k = client.get(kvpair.key)
+    print(k)
+
+    client.put(KVPair(1, "first "))
+    k = client.get(1)
+    print(k)
 
     #file = RFile(RFileMetadata("new_file", 0), "this is the content of the file")
     # print("file content:", file.content)

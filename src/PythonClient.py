@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 import sys
-import glob
+# import glob
 sys.path.append('gen-py')
-sys.path.insert(0, glob.glob('/home/cs557-inst/thrift-0.13.0/lib/py/build/lib*')[0])
+# sys.path.insert(0, glob.glob('/home/cs557-inst/thrift-0.13.0/lib/py/build/lib*')[0])
 
-from chord import FileStore
-from chord.ttypes import NodeID, RFile, RFileMetadata, SystemException
+from kvstore import KVStore
+from kvstore.ttypes import KVPair, NodeID #, RFile, RFileMetadata, SystemException
 
 from thrift import Thrift
 from thrift.transport import TSocket
@@ -29,37 +29,49 @@ def main():
     protocol = TBinaryProtocol.TBinaryProtocol(transport)
 
     # Create a client to use the protocol encoder
-    client = FileStore.Client(protocol)
+    client = KVStore.Client(protocol)
 
     # Connect!
     transport.open()
-    filename = sys.argv[3]
-    content = filename + "'s content"
-    file = RFile(RFileMetadata(filename, 0), content)
+    # filename = sys.argv[3]
+    # content = filename + "'s content"
+    # file = RFile(RFileMetadata(filename, 0), content)
+    kvpair = KVPair(0, "zeroth")
+    kvdict = {}
+    kvdict[kvpair.key] = kvpair.val
+    print(kvpair.key, kvpair.val)
+    print(kvpair.val in kvdict) 
+    print(kvdict[kvpair.key])
+    kvdict[1] = "first"
+    print(kvdict[1])
+
+    client.put(kvpair)
+
     #file = RFile(RFileMetadata("new_file", 0), "this is the content of the file")
-    print("file content:", file.content)
+    # print("file content:", file.content)
 
-    client.writeFile(file)
-    print('writeFile(rFile)')
+    
+    # client.writeFile(file)
+    # print('writeFile(rFile)')
 
-    readfile = client.readFile(filename)
-    print("File Read: " + readfile.meta.filename, readfile.meta.version)
+    # readfile = client.readFile(filename)
+    # print("File Read: " + readfile.meta.filename, readfile.meta.version)
 
-    node_list = []
+    # node_list = []
 
-    client.setFingertable(node_list)
-    print('gsetFingertable(node_list)')
+    # client.setFingertable(node_list)
+    # print('gsetFingertable(node_list)')
 
-    file_key = hashlib.sha256((filename).encode('utf-8')).hexdigest()
+    # file_key = hashlib.sha256((filename).encode('utf-8')).hexdigest()
 
-    client.findSucc(file_key)
-    print("findSucc(" + file_key + ")")
+    # client.findSucc(file_key)
+    # print("findSucc(" + file_key + ")")
 
-    client.findPred(file_key)
-    print("findPred(" + file_key + ")")
+    # client.findPred(file_key)
+    # print("findPred(" + file_key + ")")
 
-    client.getNodeSucc()
-    print('getNodeSucc()')
+    # client.getNodeSucc()
+    # print('getNodeSucc()')
     # Close!
     transport.close()
 

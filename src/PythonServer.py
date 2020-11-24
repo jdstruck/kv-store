@@ -29,11 +29,15 @@ class KVStoreHandler:
     def get(self, key):
         if DEBUG:
             print("get", key)
-        return kvstore[key]
+        if(key in self.kvstore):
+            return self.kvstore[key]
+        else:
+            return None
 
-    def put(self, KVPair):
+    def put(self, kvpair):
         if DEBUG:
-            print("put", KVPair.key, KVPair.val)
+            print("put", kvpair.key, kvpair.val)
+        self.kvstore[kvpair.key] = kvpair.val
         return
 
 def getIP():

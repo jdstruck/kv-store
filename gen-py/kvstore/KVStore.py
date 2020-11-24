@@ -27,11 +27,10 @@ class Iface(object):
         """
         pass
 
-    def put(self, key, val):
+    def put(self, kvpair):
         """
         Parameters:
-         - key
-         - val
+         - kvpair
 
         """
         pass
@@ -78,21 +77,19 @@ class Client(Iface):
             raise result.systemException
         raise TApplicationException(TApplicationException.MISSING_RESULT, "get failed: unknown result")
 
-    def put(self, key, val):
+    def put(self, kvpair):
         """
         Parameters:
-         - key
-         - val
+         - kvpair
 
         """
-        self.send_put(key, val)
+        self.send_put(kvpair)
         self.recv_put()
 
-    def send_put(self, key, val):
+    def send_put(self, kvpair):
         self._oprot.writeMessageBegin('put', TMessageType.CALL, self._seqid)
         args = put_args()
-        args.key = key
-        args.val = val
+        args.kvpair = kvpair
         args.write(self._oprot)
         self._oprot.writeMessageEnd()
         self._oprot.trans.flush()
@@ -173,7 +170,7 @@ class Processor(Iface, TProcessor):
         iprot.readMessageEnd()
         result = put_result()
         try:
-            self._handler.put(args.key, args.val)
+            self._handler.put(args.kvpair)
             msg_type = TMessageType.REPLY
         except TTransport.TTransportException:
             raise
@@ -335,15 +332,13 @@ get_result.thrift_spec = (
 class put_args(object):
     """
     Attributes:
-     - key
-     - val
+     - kvpair
 
     """
 
 
-    def __init__(self, key=None, val=None,):
-        self.key = key
-        self.val = val
+    def __init__(self, kvpair=None,):
+        self.kvpair = kvpair
 
     def read(self, iprot):
         if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
@@ -355,13 +350,9 @@ class put_args(object):
             if ftype == TType.STOP:
                 break
             if fid == 1:
-                if ftype == TType.I32:
-                    self.key = iprot.readI32()
-                else:
-                    iprot.skip(ftype)
-            elif fid == 2:
-                if ftype == TType.STRING:
-                    self.val = iprot.readString().decode('utf-8', errors='replace') if sys.version_info[0] == 2 else iprot.readString()
+                if ftype == TType.STRUCT:
+                    self.kvpair = KVPair()
+                    self.kvpair.read(iprot)
                 else:
                     iprot.skip(ftype)
             else:
@@ -374,13 +365,9 @@ class put_args(object):
             oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
             return
         oprot.writeStructBegin('put_args')
-        if self.key is not None:
-            oprot.writeFieldBegin('key', TType.I32, 1)
-            oprot.writeI32(self.key)
-            oprot.writeFieldEnd()
-        if self.val is not None:
-            oprot.writeFieldBegin('val', TType.STRING, 2)
-            oprot.writeString(self.val.encode('utf-8') if sys.version_info[0] == 2 else self.val)
+        if self.kvpair is not None:
+            oprot.writeFieldBegin('kvpair', TType.STRUCT, 1)
+            self.kvpair.write(oprot)
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -401,8 +388,7 @@ class put_args(object):
 all_structs.append(put_args)
 put_args.thrift_spec = (
     None,  # 0
-    (1, TType.I32, 'key', None, None, ),  # 1
-    (2, TType.STRING, 'val', 'UTF8', None, ),  # 2
+    (1, TType.STRUCT, 'kvpair', [KVPair, None], None, ),  # 1
 )
 
 

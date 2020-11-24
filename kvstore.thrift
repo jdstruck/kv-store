@@ -29,7 +29,7 @@ service KVStore {
   KVPair get(1: i32 key)
     throws (1: SystemException systemException),
 
-  void put(1: i32 key, 2: string val)
+  void put(1: KVPair kvpair)
     throws (1: SystemException systemException),
 
   /* void writeFile(1: RFile rFile) */

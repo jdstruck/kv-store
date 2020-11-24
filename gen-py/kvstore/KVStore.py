@@ -278,9 +278,8 @@ class get_result(object):
             if ftype == TType.STOP:
                 break
             if fid == 0:
-                if ftype == TType.STRUCT:
-                    self.success = KVPair()
-                    self.success.read(iprot)
+                if ftype == TType.STRING:
+                    self.success = iprot.readString().decode('utf-8', errors='replace') if sys.version_info[0] == 2 else iprot.readString()
                 else:
                     iprot.skip(ftype)
             elif fid == 1:
@@ -299,8 +298,8 @@ class get_result(object):
             return
         oprot.writeStructBegin('get_result')
         if self.success is not None:
-            oprot.writeFieldBegin('success', TType.STRUCT, 0)
-            self.success.write(oprot)
+            oprot.writeFieldBegin('success', TType.STRING, 0)
+            oprot.writeString(self.success.encode('utf-8') if sys.version_info[0] == 2 else self.success)
             oprot.writeFieldEnd()
         if self.systemException is not None:
             oprot.writeFieldBegin('systemException', TType.STRUCT, 1)
@@ -324,7 +323,7 @@ class get_result(object):
         return not (self == other)
 all_structs.append(get_result)
 get_result.thrift_spec = (
-    (0, TType.STRUCT, 'success', [KVPair, None], None, ),  # 0
+    (0, TType.STRING, 'success', 'UTF8', None, ),  # 0
     (1, TType.STRUCT, 'systemException', [SystemException, None], None, ),  # 1
 )
 

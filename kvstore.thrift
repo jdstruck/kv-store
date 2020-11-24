@@ -26,7 +26,7 @@ struct KVPair {
 
 service KVStore {
 
-  KVPair get(1: i32 key)
+  string get(1: i32 key)
     throws (1: SystemException systemException),
 
   void put(1: KVPair kvpair)

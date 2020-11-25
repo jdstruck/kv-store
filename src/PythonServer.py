@@ -2,7 +2,6 @@
 
 # import glob
 import sys
-import re
 sys.path.append('gen-py')
 # sys.path.insert(0, glob.glob('/home/cs557-inst/thrift-0.13.0/lib/py/build/lib*')[0])
 # from chord import FileStore
@@ -14,8 +13,11 @@ from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
+
+import re
 import socket
-import hashlib
+# import hashlib
+import time
 
 DEBUG = True 
 
@@ -77,6 +79,7 @@ def getServersAndID(ip, port):
             id = count
         print()
         servers.append(u)
+    assert(id != None)
     return (servers, id)
 
 def initServer():

@@ -36,12 +36,7 @@ class KVStoreHandler:
         self.n = NodeID(id, ip, int(port))
         self.kvstore = {}
         self.servers = servers
-        
-        file = pathlib.Path('commit_log')
-        if file.exists():
-            with open('commit_log', 'r') as f:
-                for l in f:
-                    print(l, end='')
+        self.readCommitLog()
         
     def get(self, key, clevel):
 # TODO: consistency level retrieval logic
@@ -54,18 +49,33 @@ class KVStoreHandler:
 
     def put(self, kvpair, clevel):
         if DEBUG:
-            print("put", str(kvpair), kvpair.key, kvpair.val)
+            print("put", str(kvpair))
+        self.writeCommitLog(kvpair)
+
+# TODO: consistency level replication logic
+        self.kvstore[kvpair.key] = kvpair.val
+        return
+
+    def readCommitLog(self):
         file = pathlib.Path('commit_log')
         if file.exists():
-            with open('commit_log') as f:
+            with open('commit_log', 'r') as f:
+                data = json.load(f)
+                temp = data['commit_log']
+                for l in temp:
+                    self.kvstore[l['key']] = l['val']
+        if DEBUG:
+            print(self.kvstore)
+
+    def writeCommitLog(self, kvpair):
+        file = pathlib.Path('commit_log')
+        if file.exists():
+            with open('commit_log', 'r') as f:
                 y = {"key":kvpair.key,
                      "val":kvpair.val}
                 data = json.load(f)
                 temp = data['commit_log']
-                print(temp)
                 temp.append(y)
-                print(temp)
-                print(data)
             with open('commit_log', 'w') as f:    
                 json.dump(data,f)
         else:
@@ -73,10 +83,6 @@ class KVStoreHandler:
                 y = {"commit_log": [{"key":kvpair.key,
                      "val":kvpair.val}]}
                 json.dump(y,f)
-
-        self.kvstore[kvpair.key] = kvpair.val
-# TODO: consistency level replication logic
-        return
 
 def getIP():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

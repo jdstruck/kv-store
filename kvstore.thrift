@@ -26,10 +26,10 @@ struct KVPair {
 
 service KVStore {
 
-  string get(1: i32 key)
+  string get(1: i32 key, 2: i32 clevel)
     throws (1: SystemException systemException),
 
-  void put(1: KVPair kvpair)
+  void put(1: KVPair kvpair, 2: i32 clevel)
     throws (1: SystemException systemException),
  
   /* void writeFile(1: RFile rFile) */

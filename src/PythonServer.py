@@ -29,17 +29,12 @@ def create_node(s):
 
 class KVStoreHandler:
 
-    def __init__(self, id=None, ip=None, port=None):
+    def __init__(self, id=None, ip=None, port=None, servers=None):
         self.n = NodeID(id, ip, int(port))
         self.kvstore = {}
-        # self.servers=[create_node(l[:-1]) for l in open('nodes')]
-        self.servers = []
-        for count, l in enumerate(open('nodes')):
-            m=re.match('([^:]+):([^:]+)',l)
-            u = (count, m.group(1),int(m.group(2)))
-            self.servers.append(u)
+        self.servers = servers
         
-    def get(self, key):
+    def get(self, key, clevel):
 # TODO: consistency level retrieval logic
         if DEBUG:
             print("get", key)
@@ -48,13 +43,13 @@ class KVStoreHandler:
         # else:
             # return None
 
-    def put(self, kvpair):
+    def put(self, kvpair, clevel):
         if DEBUG:
             print("put", str(kvpair), kvpair.key, kvpair.val)
-# TODO: Write in write-ahead log
         with open('commit_log', 'a') as f:
             f.write(str(kvpair))
             f.write("\n")
+
         self.kvstore[kvpair.key] = kvpair.val
 # TODO: consistency level replication logic
         return
@@ -65,7 +60,6 @@ def getIP():
     ip = s.getsockname()[0]
     s.close()
     return ip
-
 
 def getServersAndID(ip, port):
     servers = []
@@ -86,7 +80,7 @@ def initServer():
     ip, port = getIP(), sys.argv[1]
     servers, id = getServersAndID(ip, port)
     # print(ip, port, id) 
-    handler = KVStoreHandler(id, ip, port)
+    handler = KVStoreHandler(id, ip, port, servers)
     processor = KVStore.Processor(handler)
     transport = TSocket.TServerSocket(port=int(sys.argv[1]))
     tfactory = TTransport.TBufferedTransportFactory()

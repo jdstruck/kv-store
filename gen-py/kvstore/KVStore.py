@@ -19,18 +19,20 @@ all_structs = []
 
 
 class Iface(object):
-    def get(self, key):
+    def get(self, key, clevel):
         """
         Parameters:
          - key
+         - clevel
 
         """
         pass
 
-    def put(self, kvpair):
+    def put(self, kvpair, clevel):
         """
         Parameters:
          - kvpair
+         - clevel
 
         """
         pass
@@ -43,19 +45,21 @@ class Client(Iface):
             self._oprot = oprot
         self._seqid = 0
 
-    def get(self, key):
+    def get(self, key, clevel):
         """
         Parameters:
          - key
+         - clevel
 
         """
-        self.send_get(key)
+        self.send_get(key, clevel)
         return self.recv_get()
 
-    def send_get(self, key):
+    def send_get(self, key, clevel):
         self._oprot.writeMessageBegin('get', TMessageType.CALL, self._seqid)
         args = get_args()
         args.key = key
+        args.clevel = clevel
         args.write(self._oprot)
         self._oprot.writeMessageEnd()
         self._oprot.trans.flush()
@@ -77,19 +81,21 @@ class Client(Iface):
             raise result.systemException
         raise TApplicationException(TApplicationException.MISSING_RESULT, "get failed: unknown result")
 
-    def put(self, kvpair):
+    def put(self, kvpair, clevel):
         """
         Parameters:
          - kvpair
+         - clevel
 
         """
-        self.send_put(kvpair)
+        self.send_put(kvpair, clevel)
         self.recv_put()
 
-    def send_put(self, kvpair):
+    def send_put(self, kvpair, clevel):
         self._oprot.writeMessageBegin('put', TMessageType.CALL, self._seqid)
         args = put_args()
         args.kvpair = kvpair
+        args.clevel = clevel
         args.write(self._oprot)
         self._oprot.writeMessageEnd()
         self._oprot.trans.flush()
@@ -144,7 +150,7 @@ class Processor(Iface, TProcessor):
         iprot.readMessageEnd()
         result = get_result()
         try:
-            result.success = self._handler.get(args.key)
+            result.success = self._handler.get(args.key, args.clevel)
             msg_type = TMessageType.REPLY
         except TTransport.TTransportException:
             raise
@@ -170,7 +176,7 @@ class Processor(Iface, TProcessor):
         iprot.readMessageEnd()
         result = put_result()
         try:
-            self._handler.put(args.kvpair)
+            self._handler.put(args.kvpair, args.clevel)
             msg_type = TMessageType.REPLY
         except TTransport.TTransportException:
             raise
@@ -197,12 +203,14 @@ class get_args(object):
     """
     Attributes:
      - key
+     - clevel
 
     """
 
 
-    def __init__(self, key=None,):
+    def __init__(self, key=None, clevel=None,):
         self.key = key
+        self.clevel = clevel
 
     def read(self, iprot):
         if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
@@ -218,6 +226,11 @@ class get_args(object):
                     self.key = iprot.readI32()
                 else:
                     iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.I32:
+                    self.clevel = iprot.readI32()
+                else:
+                    iprot.skip(ftype)
             else:
                 iprot.skip(ftype)
             iprot.readFieldEnd()
@@ -231,6 +244,10 @@ class get_args(object):
         if self.key is not None:
             oprot.writeFieldBegin('key', TType.I32, 1)
             oprot.writeI32(self.key)
+            oprot.writeFieldEnd()
+        if self.clevel is not None:
+            oprot.writeFieldBegin('clevel', TType.I32, 2)
+            oprot.writeI32(self.clevel)
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -252,6 +269,7 @@ all_structs.append(get_args)
 get_args.thrift_spec = (
     None,  # 0
     (1, TType.I32, 'key', None, None, ),  # 1
+    (2, TType.I32, 'clevel', None, None, ),  # 2
 )
 
 
@@ -332,12 +350,14 @@ class put_args(object):
     """
     Attributes:
      - kvpair
+     - clevel
 
     """
 
 
-    def __init__(self, kvpair=None,):
+    def __init__(self, kvpair=None, clevel=None,):
         self.kvpair = kvpair
+        self.clevel = clevel
 
     def read(self, iprot):
         if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
@@ -354,6 +374,11 @@ class put_args(object):
                     self.kvpair.read(iprot)
                 else:
                     iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.I32:
+                    self.clevel = iprot.readI32()
+                else:
+                    iprot.skip(ftype)
             else:
                 iprot.skip(ftype)
             iprot.readFieldEnd()
@@ -367,6 +392,10 @@ class put_args(object):
         if self.kvpair is not None:
             oprot.writeFieldBegin('kvpair', TType.STRUCT, 1)
             self.kvpair.write(oprot)
+            oprot.writeFieldEnd()
+        if self.clevel is not None:
+            oprot.writeFieldBegin('clevel', TType.I32, 2)
+            oprot.writeI32(self.clevel)
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -388,6 +417,7 @@ all_structs.append(put_args)
 put_args.thrift_spec = (
     None,  # 0
     (1, TType.STRUCT, 'kvpair', [KVPair, None], None, ),  # 1
+    (2, TType.I32, 'clevel', None, None, ),  # 2
 )
 
 

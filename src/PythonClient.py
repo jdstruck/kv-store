@@ -17,6 +17,9 @@ import hashlib
 
 # TODO: act as console, allow stream of requests
 
+QUORUM = 0
+ONE = 1
+
 def main():
     print(sys.argv[0])
     print(sys.argv[1:])
@@ -50,8 +53,8 @@ def main():
             print("> Error:", key, "is not between 0 and 255")
         else:
             val = input("Enter a string of characters: ")
-            client.put(KVPair(key, val))
-            assert(client.get(key) == val)
+            client.put(KVPair(key, val), QUORUM)
+            assert(client.get(key, QUORUM) == val)
             print("Success!")
 
     

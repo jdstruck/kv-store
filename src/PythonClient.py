@@ -15,6 +15,7 @@ from thrift.protocol import TBinaryProtocol
 
 import hashlib
 
+# TODO: act as console, allow stream of requests
 
 def main():
     print(sys.argv[0])
@@ -36,16 +37,32 @@ def main():
     # filename = sys.argv[3]
     # content = filename + "'s content"
     # file = RFile(RFileMetadata(filename, 0), content)
+    while (True):
+        # TODO: guard int() from input(string)
+        key = int(input("Enter a number between 0 and 255: "))
+        val = input("Enter a string of characters: ")
+        client.put(KVPair(key, val))
+        # print(client.get(key))
+        assert(client.get(key) == val)
+        
+        
 
     kvpair = KVPair(0, "zeroth")
     client.put(kvpair)
     k = client.get(kvpair.key)
     print(k)
+    assert(k == "zeroth")
 
-    client.put(KVPair(1, "first "))
+    client.put(KVPair(1, "first"))
     k = client.get(1)
     print(k)
+    assert(k == "first")
 
+    print(client.get(2))
+    # assert(k == "first")
+
+
+    
     #file = RFile(RFileMetadata("new_file", 0), "this is the content of the file")
     # print("file content:", file.content)
 

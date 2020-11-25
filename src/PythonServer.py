@@ -2,6 +2,7 @@
 
 # import glob
 import sys
+import re
 sys.path.append('gen-py')
 # sys.path.insert(0, glob.glob('/home/cs557-inst/thrift-0.13.0/lib/py/build/lib*')[0])
 # from chord import FileStore
@@ -18,26 +19,42 @@ import hashlib
 
 DEBUG = True 
 
+
+def create_node(s):
+    m=re.match('([^:]+):([^:]+)',s)
+    u = (m.group(1),int(m.group(2)))
+    return u
+
 class KVStoreHandler:
 
     def __init__(self, id=None, ip=None, port=None):
         self.n = NodeID(id, ip, int(port))
         self.kvstore = {}
+        # self.servers=[create_node(l[:-1]) for l in open('nodes')]
+        self.servers = []
+        for count, l in enumerate(open('nodes')):
+            m=re.match('([^:]+):([^:]+)',l)
+            u = (count, m.group(1),int(m.group(2)))
+            self.servers.append(u)
         
-        if DEBUG:
-            print("Initialize Node...\nNode ID: " + id, "\nNode IP: " + ip, "\nNode Port: " + port + "\n")
     def get(self, key):
+# TODO: consistency level retrieval logic
         if DEBUG:
             print("get", key)
         if(key in self.kvstore):
             return self.kvstore[key]
-        else:
-            return None
+        # else:
+            # return None
 
     def put(self, kvpair):
         if DEBUG:
-            print("put", kvpair.key, kvpair.val)
+            print("put", str(kvpair), kvpair.key, kvpair.val)
+# TODO: Write in write-ahead log
+        with open('commit_log', 'a') as f:
+            f.write(str(kvpair))
+            f.write("\n")
         self.kvstore[kvpair.key] = kvpair.val
+# TODO: consistency level replication logic
         return
 
 def getIP():
@@ -47,12 +64,26 @@ def getIP():
     s.close()
     return ip
 
-def getID(s):
-    return hashlib.sha256((s).encode('utf-8')).hexdigest()
+
+def getServersAndID(ip, port):
+    servers = []
+    id = None
+    for count, l in enumerate(open('nodes')):
+        m = re.match('([^:]+):([^:]+)',l)
+        u = (count, m.group(1), int(m.group(2)))
+        print(u[0], u[1], u[2], end='')
+        if u[1] == ip and int(u[2]) == int(port):
+            print(" <- this server", end='')
+            id = count
+        print()
+        servers.append(u)
+    return (servers, id)
 
 def initServer():
     ip, port = getIP(), sys.argv[1]
-    handler = KVStoreHandler(getID(ip + ":" + port), ip, port)
+    servers, id = getServersAndID(ip, port)
+    # print(ip, port, id) 
+    handler = KVStoreHandler(id, ip, port)
     processor = KVStore.Processor(handler)
     transport = TSocket.TServerSocket(port=int(sys.argv[1]))
     tfactory = TTransport.TBufferedTransportFactory()

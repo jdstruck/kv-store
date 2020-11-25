@@ -81,7 +81,6 @@ class KVStoreHandler:
         else:
             with open('commit_log', 'w') as f:
                 json.dump({"commit_log": [ {"key":kvpair.key, "val":kvpair.val} ] }, f)
-                # json.dump(y,f)
 
 def getIP():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

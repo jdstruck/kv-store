@@ -14,10 +14,12 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
+import pathlib
 import re
 import socket
 # import hashlib
 import time
+
 
 DEBUG = True 
 
@@ -33,6 +35,12 @@ class KVStoreHandler:
         self.n = NodeID(id, ip, int(port))
         self.kvstore = {}
         self.servers = servers
+        
+        file = pathlib.Path('commit_log')
+        if file.exists():
+            with open('commit_log', 'r') as f:
+                for l in f:
+                    print(l, end='')
         
     def get(self, key, clevel):
 # TODO: consistency level retrieval logic

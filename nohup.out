@@ -1,0 +1,14 @@
+Unable to init server: Could not connect: Connection refused
+Unable to init server: Could not connect: Connection refused
+Traceback (most recent call last):
+  File "/usr/bin/deluge", line 33, in <module>
+    sys.exit(load_entry_point('deluge==2.0.4.dev38', 'gui_scripts', 'deluge')())
+  File "/usr/lib/python3.8/site-packages/deluge/ui/ui_entry.py", line 143, in start_ui
+    ui.start()
+  File "/usr/lib/python3.8/site-packages/deluge/ui/gtk3/__init__.py", line 43, in start
+    from .gtkui import GtkUI
+  File "/usr/lib/python3.8/site-packages/deluge/ui/gtk3/gtkui.py", line 27, in <module>
+    from twisted.internet import defer, gtk3reactor
+  File "/usr/lib/python3.8/site-packages/twisted/internet/gtk3reactor.py", line 37, in <module>
+    raise ImportError(
+ImportError: Gtk3 requires X11, and no DISPLAY environment variable is set

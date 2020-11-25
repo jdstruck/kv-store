@@ -75,15 +75,12 @@ class KVStoreHandler:
             with open('commit_log', 'r') as f:
                 data = json.load(f)
                 temp = data['commit_log']
-                temp.append({"key":kvpair.key,
-                             "val":kvpair.val})
+                temp.append({"key":kvpair.key, "val":kvpair.val})
             with open('commit_log', 'w') as f:    
                 json.dump(data,f)
         else:
             with open('commit_log', 'w') as f:
-                json.dump({"commit_log": [
-                    {"key":kvpair.key,
-                     "val":kvpair.val}]}, f)
+                json.dump({"commit_log": [ {"key":kvpair.key, "val":kvpair.val} ] }, f)
                 # json.dump(y,f)
 
 def getIP():

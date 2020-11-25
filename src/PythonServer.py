@@ -36,7 +36,7 @@ class KVStoreHandler:
         self.n = NodeID(id, ip, int(port))
         self.kvstore = {}
         self.servers = servers
-        self.readCommitLog()
+        self.__populateKvstoreFromCommitLog()
         
     def get(self, key, clevel):
 # TODO: consistency level retrieval logic
@@ -50,13 +50,15 @@ class KVStoreHandler:
     def put(self, kvpair, clevel):
         if DEBUG:
             print("put", str(kvpair))
-        self.writeCommitLog(kvpair)
+        self.__writeToCommitLog(kvpair)
 
 # TODO: consistency level replication logic
         self.kvstore[kvpair.key] = kvpair.val
         return
 
-    def readCommitLog(self):
+    def __populateKvstoreFromCommitLog(self):
+        if DEBUG:
+            print("Populating kvstore from commit_log...")
         file = pathlib.Path('commit_log')
         if file.exists():
             with open('commit_log', 'r') as f:
@@ -65,24 +67,24 @@ class KVStoreHandler:
                 for l in temp:
                     self.kvstore[l['key']] = l['val']
         if DEBUG:
-            print(self.kvstore)
+            print("Contents of kvstore:", self.kvstore)
 
-    def writeCommitLog(self, kvpair):
+    def __writeToCommitLog(self, kvpair):
         file = pathlib.Path('commit_log')
         if file.exists():
             with open('commit_log', 'r') as f:
-                y = {"key":kvpair.key,
-                     "val":kvpair.val}
                 data = json.load(f)
                 temp = data['commit_log']
-                temp.append(y)
+                temp.append({"key":kvpair.key,
+                             "val":kvpair.val})
             with open('commit_log', 'w') as f:    
                 json.dump(data,f)
         else:
             with open('commit_log', 'w') as f:
-                y = {"commit_log": [{"key":kvpair.key,
-                     "val":kvpair.val}]}
-                json.dump(y,f)
+                json.dump({"commit_log": [
+                    {"key":kvpair.key,
+                     "val":kvpair.val}]}, f)
+                # json.dump(y,f)
 
 def getIP():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

@@ -14,6 +14,7 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
 
+import json
 import pathlib
 import re
 import socket
@@ -54,9 +55,24 @@ class KVStoreHandler:
     def put(self, kvpair, clevel):
         if DEBUG:
             print("put", str(kvpair), kvpair.key, kvpair.val)
-        with open('commit_log', 'a') as f:
-            f.write(str(kvpair))
-            f.write("\n")
+        file = pathlib.Path('commit_log')
+        if file.exists():
+            with open('commit_log') as f:
+                y = {"key":kvpair.key,
+                     "val":kvpair.val}
+                data = json.load(f)
+                temp = data['commit_log']
+                print(temp)
+                temp.append(y)
+                print(temp)
+                print(data)
+            with open('commit_log', 'w') as f:    
+                json.dump(data,f)
+        else:
+            with open('commit_log', 'w') as f:
+                y = {"commit_log": [{"key":kvpair.key,
+                     "val":kvpair.val}]}
+                json.dump(y,f)
 
         self.kvstore[kvpair.key] = kvpair.val
 # TODO: consistency level replication logic

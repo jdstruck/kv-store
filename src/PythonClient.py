@@ -39,33 +39,20 @@ def main():
     # file = RFile(RFileMetadata(filename, 0), content)
     while (True):
         # TODO: guard int() from input(string)
-        rawinput = input("Enter a number between 0 and 255: ")
+        inputstr = input("Enter a number between 0 and 255: ")
         try:
-            key = int(rawinput)
-            if(key < 0 or key > 244):
-                print("> Error:", key, "is not between 0 and 255")
-            else:
-                val = input("Enter a string of characters: ")
-                client.put(KVPair(key, val))
-                assert(client.get(key) == val)
-                print("Success!")
+            key = int(inputstr)
         except ValueError:
-            print("> Error:", rawinput, "is not a number")
+            print("> Error:", inputstr, "is not a number")
+            continue
 
-    kvpair = KVPair(0, "zeroth")
-    client.put(kvpair)
-    k = client.get(kvpair.key)
-    print(k)
-    assert(k == "zeroth")
-
-    client.put(KVPair(1, "first"))
-    k = client.get(1)
-    print(k)
-    assert(k == "first")
-
-    print(client.get(2))
-    # assert(k == "first")
-
+        if(key < 0 or key > 244):
+            print("> Error:", key, "is not between 0 and 255")
+        else:
+            val = input("Enter a string of characters: ")
+            client.put(KVPair(key, val))
+            assert(client.get(key) == val)
+            print("Success!")
 
     
     #file = RFile(RFileMetadata("new_file", 0), "this is the content of the file")

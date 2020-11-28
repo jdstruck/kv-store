@@ -46,10 +46,10 @@ def main():
         try:
             key = int(inputstr)
         except ValueError:
-            print("> Error:", inputstr, "is not a number")
+            print("> Error:","'" + inputstr + "'", "is not a number")
             continue
 
-        if(key < 0 or key > 244):
+        if(key < 0 or key > 255):
             print("> Error:", key, "is not between 0 and 255")
         else:
             val = input("Enter a string of characters: ")

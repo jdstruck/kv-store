@@ -50,6 +50,7 @@ class KVStoreHandler:
     def put(self, kvpair, clevel):
         if DEBUG:
             print("put", str(kvpair))
+        # TODO: add timestamp to output
         self.__writeToCommitLog(kvpair)
         self.__storeKVPair(kvpair)
         return

@@ -44,8 +44,8 @@ class KVStoreHandler:
             print("get", key)
         if(key in self.kvstore):
             return self.kvstore[key]
-        else:
-            return None
+        # else:
+            # return None
 
     def put(self, kvpair, clevel):
         if DEBUG:

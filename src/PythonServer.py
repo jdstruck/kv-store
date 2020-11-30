@@ -49,32 +49,31 @@ class KVStoreHandler:
             # return None
 
     def put(self, kvpair, clevel):
-        if DEBUG:
-            print("\nput called at", self.meta.ip, self.meta.port, "key:", str(kvpair.key))
+        if DEBUG and 1:
+            print("\nput called at", self.meta.ip, self.meta.port, "key:", str(kvpair.key), "at time", time.time())
         # TODO: add timestamp to output
-        self.__writeToCommitLog(kvpair)
+        self.__writeToCommitLog(kvpair, time.time())
         self.__storeKVPair(kvpair, clevel)
         return
 
     def __storeKVPair(self, kvpair, clevel):
         slen = len(self.servers)
-        # if DEBUG:
-        #     print("num of servers", slen, "kvpair.key", kvpair.key)
+        if DEBUG and 0:
+            print("num of servers", slen, "kvpair.key", kvpair.key)
         num = 0
         for i in range(slen):
-            # print("num", num, "num + MAXKEY/slen", num)
             if kvpair.key >= num and kvpair.key < num + (MAXKEY//(slen)):
                 ip, port = self.servers[i][1], self.servers[i][2];
-                if DEBUG:
+                if DEBUG and 1:
                     print("\tkey", kvpair.key, "goes to", ip, port);
             num += MAXKEY//slen
         if ip == self.meta.ip and port == self.meta.port:
-            if DEBUG:
+            if DEBUG and 1:
                 print("\tBase case: put to this server")
             self.kvstore[kvpair.key] = kvpair.val
             self.__replicate(kvpair)
         else:
-            if DEBUG:
+            if DEBUG and 1:
                 print("\tPut to another server...")
             transport = TSocket.TSocket(ip, port);
             transport = TTransport.TBufferedTransport(transport)
@@ -86,7 +85,7 @@ class KVStoreHandler:
 
     def __replicate(self, kvpair):
 # TODO: consistency level replication logic
-        if DEBUG:
+        if DEBUG and 1:
             print("\t\t__replicate(", kvpair, ")")
 
     def __populateKvstoreFromCommitLog(self):
@@ -97,22 +96,22 @@ class KVStoreHandler:
                 temp = data['commit_log']
                 for l in temp:
                     self.kvstore[l['key']] = l['val']
-        # if DEBUG:
-        #     print("Populating kvstore from commit_log...")
-        #     print("Contents of kvstore:", self.kvstore)
+        if DEBUG and 0:
+            print("Populating kvstore from commit_log...")
+            print("Contents of kvstore:", self.kvstore)
 
-    def __writeToCommitLog(self, kvpair):
+    def __writeToCommitLog(self, kvpair, timestamp):
         file = pathlib.Path('commit_log')
         if file.exists():
             with open('commit_log', 'r') as f:
                 data = json.load(f)
                 temp = data['commit_log']
-                temp.append({"key":kvpair.key, "val":kvpair.val})
+                temp.append({"key":kvpair.key, "val":kvpair.val, "time":timestamp})
             with open('commit_log', 'w') as f:    
                 json.dump(data,f)
         else:
             with open('commit_log', 'w') as f:
-                json.dump({"commit_log": [ {"key":kvpair.key, "val":kvpair.val} ] }, f)
+                json.dump({"commit_log": [ {"key":kvpair.key, "val":kvpair.val, "time":timestamp} ] }, f)
 
 def getIP():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

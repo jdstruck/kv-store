@@ -50,42 +50,46 @@ class KVStoreHandler:
 
     def put(self, kvpair, clevel):
         if DEBUG:
-            print("put", str(kvpair))
+            print("\nput called at", self.meta.ip, self.meta.port, "key:", str(kvpair.key))
         # TODO: add timestamp to output
         self.__writeToCommitLog(kvpair)
-        self.__storeKVPair(kvpair)
+        self.__storeKVPair(kvpair, clevel)
         return
 
-    def __storeKVPair(self, kvpair):
-# TODO: consistency level replication logic
-        self.__replicate(kvpair);
-
-    def __replicate(self, kvpair):
+    def __storeKVPair(self, kvpair, clevel):
         slen = len(self.servers)
-        if DEBUG:
-            print("num of servers", slen, "kvpair.key", kvpair.key)
+        # if DEBUG:
+        #     print("num of servers", slen, "kvpair.key", kvpair.key)
         num = 0
         for i in range(slen):
             # print("num", num, "num + MAXKEY/slen", num)
             if kvpair.key >= num and kvpair.key < num + (MAXKEY//(slen)):
                 ip, port = self.servers[i][1], self.servers[i][2];
-                print("key", kvpair.key, "goes to", ip, port);
+                if DEBUG:
+                    print("\tkey", kvpair.key, "goes to", ip, port);
             num += MAXKEY//slen
         if ip == self.meta.ip and port == self.meta.port:
+            if DEBUG:
+                print("\tBase case: put to this server")
             self.kvstore[kvpair.key] = kvpair.val
+            self.__replicate(kvpair)
         else:
+            if DEBUG:
+                print("\tPut to another server...")
             transport = TSocket.TSocket(ip, port);
             transport = TTransport.TBufferedTransport(transport)
             protocol = TBinaryProtocol.TBinaryProtocol(transport)
             client = KVStore.Client(protocol)
             transport.open()
+            client.put(kvpair, clevel)
+            transport.close()
 
-            # client.put(
-
+    def __replicate(self, kvpair):
+# TODO: consistency level replication logic
+        if DEBUG:
+            print("\t\t__replicate(", kvpair, ")")
 
     def __populateKvstoreFromCommitLog(self):
-        if DEBUG:
-            print("Populating kvstore from commit_log...")
         file = pathlib.Path('commit_log')
         if file.exists():
             with open('commit_log', 'r') as f:
@@ -93,8 +97,9 @@ class KVStoreHandler:
                 temp = data['commit_log']
                 for l in temp:
                     self.kvstore[l['key']] = l['val']
-        if DEBUG:
-            print("Contents of kvstore:", self.kvstore)
+        # if DEBUG:
+        #     print("Populating kvstore from commit_log...")
+        #     print("Contents of kvstore:", self.kvstore)
 
     def __writeToCommitLog(self, kvpair):
         file = pathlib.Path('commit_log')

@@ -42,7 +42,7 @@ def main():
     # file = RFile(RFileMetadata(filename, 0), content)
     while (True):
         # TODO: guard int() from input(string)
-        inputstr = input("Enter a number between 0 and 255: ")
+        inputstr = input("Enter a number in range [0, 255]: ")
         try:
             key = int(inputstr)
         except ValueError:
@@ -54,8 +54,9 @@ def main():
         else:
             val = input("Enter a string of characters: ")
             client.put(KVPair(key, val), QUORUM)
-            assert(client.get(key, QUORUM) == val)
-            print("Success!")
+            # assert(client.get(key, QUORUM) == val)
+            print("Success!\n")
+            print("Press CTRL-C to exit, or...")
 
     
     #file = RFile(RFileMetadata("new_file", 0), "this is the content of the file")

@@ -21,6 +21,7 @@ import socket
 # import hashlib
 import time
 
+MAXKEY = 256
 
 DEBUG = True 
 
@@ -33,7 +34,7 @@ def create_node(s):
 class KVStoreHandler:
 
     def __init__(self, id=None, ip=None, port=None, servers=None):
-        self.n = NodeID(id, ip, int(port))
+        self.meta = NodeID(id, ip, int(port))
         self.kvstore = {}
         self.servers = servers
         self.__populateKvstoreFromCommitLog()
@@ -57,7 +58,29 @@ class KVStoreHandler:
 
     def __storeKVPair(self, kvpair):
 # TODO: consistency level replication logic
-        self.kvstore[kvpair.key] = kvpair.val
+        self.__replicate(kvpair);
+
+    def __replicate(self, kvpair):
+        slen = len(self.servers)
+        if DEBUG:
+            print("num of servers", slen, "kvpair.key", kvpair.key)
+        num = 0
+        for i in range(slen):
+            # print("num", num, "num + MAXKEY/slen", num)
+            if kvpair.key >= num and kvpair.key < num + (MAXKEY//(slen)):
+                ip, port = self.servers[i][1], self.servers[i][2];
+                print("key", kvpair.key, "goes to", ip, port);
+            num += MAXKEY//slen
+        if ip == self.meta.ip and port == self.meta.port:
+            self.kvstore[kvpair.key] = kvpair.val
+        else:
+            transport = TSocket.TSocket(ip, port);
+            transport = TTransport.TBufferedTransport(transport)
+            protocol = TBinaryProtocol.TBinaryProtocol(transport)
+            client = KVStore.Client(protocol)
+            transport.open()
+
+            # client.put(
 
 
     def __populateKvstoreFromCommitLog(self):

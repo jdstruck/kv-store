@@ -15,7 +15,6 @@ from thrift.protocol import TBinaryProtocol
 
 import hashlib
 
-# TODO: act as console, allow stream of requests
 
 QUORUM = 0
 ONE = 1
@@ -41,50 +40,52 @@ def main():
     # content = filename + "'s content"
     # file = RFile(RFileMetadata(filename, 0), content)
     while (True):
-        # TODO: guard int() from input(string)
-        inputstr = input("Enter a number in range [0, 255]: ")
+        inputstr = input('Enter 1 for get(), 2 for put()\n')
         try:
-            key = int(inputstr)
+            func = int(inputstr)
         except ValueError:
             print("> Error:","'" + inputstr + "'", "is not a number")
             continue
+        if func < 1 or func > 2:
+            print('> Error: you entered', inputstr + '.\n', 'Enter 1 for get(), 2 for put()')
+            continue
 
-        if(key < 0 or key > 255):
-            print("> Error:", key, "is not between 0 and 255")
+        # get()
+        if func == 1:
+            inputstr = input("Enter a number in range [0, 255]: ")
+            try:
+                key = int(inputstr)
+            except ValueError:
+                print("> Error:","'" + inputstr + "'", "is not a number")
+                continue
+
+            if(key < 0 or key > 255):
+                print("> Error:", key, "is not between 0 and 255")
+            else:
+                val =  client.get(key, QUORUM)
+                # assert(client.get(key, QUORUM) == val)
+                print("Value =", val)
+                print()
+                print("Press CTRL-C to exit, or...")
+
+        # put()
         else:
-            val = input("Enter a string of characters: ")
-            client.put(KVPair(key, val), QUORUM)
-            # assert(client.get(key, QUORUM) == val)
-            print("Success!\n")
-            print("Press CTRL-C to exit, or...")
+            inputstr = input("Enter a number in range [0, 255]: ")
+            try:
+                key = int(inputstr)
+            except ValueError:
+                print("> Error:","'" + inputstr + "'", "is not a number")
+                continue
 
-    
-    #file = RFile(RFileMetadata("new_file", 0), "this is the content of the file")
-    # print("file content:", file.content)
+            if(key < 0 or key > 255):
+                print("> Error:", key, "is not between 0 and 255")
+            else:
+                val = input("Enter a string of characters: ")
+                client.put(KVPair(key, val), QUORUM)
+                # assert(client.get(key, QUORUM) == val)
+                print("Success!\n")
+                print("Press CTRL-C to exit, or...")
 
-    
-    # client.writeFile(file)
-    # print('writeFile(rFile)')
-
-    # readfile = client.readFile(filename)
-    # print("File Read: " + readfile.meta.filename, readfile.meta.version)
-
-    # node_list = []
-
-    # client.setFingertable(node_list)
-    # print('gsetFingertable(node_list)')
-
-    # file_key = hashlib.sha256((filename).encode('utf-8')).hexdigest()
-
-    # client.findSucc(file_key)
-    # print("findSucc(" + file_key + ")")
-
-    # client.findPred(file_key)
-    # print("findPred(" + file_key + ")")
-
-    # client.getNodeSucc()
-    # print('getNodeSucc()')
-    # Close!
     transport.close()
 
 if __name__ == '__main__':

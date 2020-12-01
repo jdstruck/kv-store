@@ -44,23 +44,20 @@ class KVStoreHandler:
         if DEBUG:
             print("get", key)
         if(key in self.kvstore):
-            return self.kvstore[key]
-        # else:
-            # return None
+            return self.kvstore[key], True
+        else:
+            return "", False
 
     def put(self, kvpair, clevel):
         if DEBUG and 1:
             print("\nput called at", self.meta.ip, self.meta.port, "key:", str(kvpair.key), "at time", time.time())
-        # TODO: add timestamp to output
-        self.__storeKVPair(kvpair, clevel)
-        return
 
-    def __storeKVPair(self, kvpair, clevel):
         slen = len(self.servers)
         if DEBUG and 0:
             print("num of servers", slen, "kvpair.key", kvpair.key)
 
         # Partitioner
+        # - Divide and portion range by number of servers
         partition = 0
         for i in range(slen):
             if kvpair.key >= partition and kvpair.key < partition + (MAXKEY//(slen)):
@@ -69,17 +66,19 @@ class KVStoreHandler:
                     print("\tkey", kvpair.key, "goes to server at id", id0);
             partition += MAXKEY//slen
 
-        # Write to replicas
+        # Write to replicas 
+        # - Start at server chosen by partitioner, then next two in order 
         for i in range(3):
             idx = (id0+i) % len(self.servers)
             id, ip, port = self.servers[idx][0], self.servers[idx][1], self.servers[idx][2]
-            # if DEBUG and 1:
-            # if ip == self.meta.ip and port == self.meta.port:
+
+            # Write locally if this server
             if id == self.meta.id:
                 if DEBUG and 1:
                     print("\tBase case: put to this server")
-                self.put_local(kvpair, clevel) # self.kvstore[kvpair.key] = kvpair.val
-                # self.__replicate(kvpair, clevel)
+                self.put_local(kvpair, clevel)
+
+            # Otherwise send to remote server
             else:
                 if DEBUG and 1:
                     print("\tPut to another server...")

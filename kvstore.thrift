@@ -23,10 +23,14 @@ struct KVPair {
   2: string val;
 }
 
+struct GetRet {
+  1: string val;
+  2: bool ret;
+}
 
 service KVStore {
 
-  string get(1: i32 key, 2: i32 clevel)
+  GetRet get(1: i32 key, 2: i32 clevel)
     throws (1: SystemException systemException),
 
   void put(1: KVPair kvpair, 2: i32 clevel)

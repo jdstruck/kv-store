@@ -24,7 +24,7 @@ if len(sys.argv) <= 1 or sys.argv[1] == '--help':
     print('Usage: ' + sys.argv[0] + ' [-h host[:port]] [-u url] [-f[ramed]] [-s[sl]] [-novalidate] [-ca_certs certs] [-keyfile keyfile] [-certfile certfile] function [arg1 [arg2...]]')
     print('')
     print('Functions:')
-    print('  string get(i32 key, i32 clevel)')
+    print('  GetRet get(i32 key, i32 clevel)')
     print('  void put(KVPair kvpair, i32 clevel)')
     print('  void put_local(KVPair kvpair, i32 clevel)')
     print('')

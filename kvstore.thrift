@@ -31,6 +31,9 @@ service KVStore {
 
   void put(1: KVPair kvpair, 2: i32 clevel)
     throws (1: SystemException systemException),
+
+  void put_local(1: KVPair kvpair, 2: i32 clevel)
+    throws (1: SystemException systemException),
  
   /* void writeFile(1: RFile rFile) */
   /*   throws (1: SystemException systemException), */

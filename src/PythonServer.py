@@ -52,7 +52,6 @@ class KVStoreHandler:
         if DEBUG and 1:
             print("\nput called at", self.meta.ip, self.meta.port, "key:", str(kvpair.key), "at time", time.time())
         # TODO: add timestamp to output
-        self.__writeToCommitLog(kvpair, time.time())
         self.__storeKVPair(kvpair, clevel)
         return
 
@@ -60,38 +59,49 @@ class KVStoreHandler:
         slen = len(self.servers)
         if DEBUG and 0:
             print("num of servers", slen, "kvpair.key", kvpair.key)
-        num = 0
-        for i in range(slen):
-            if kvpair.key >= num and kvpair.key < num + (MAXKEY//(slen)):
-                ip, port = self.servers[i][1], self.servers[i][2];
-                if DEBUG and 1:
-                    print("\tkey", kvpair.key, "goes to", ip, port);
-            num += MAXKEY//slen
-        if ip == self.meta.ip and port == self.meta.port:
-            if DEBUG and 1:
-                print("\tBase case: put to this server")
-            self.kvstore[kvpair.key] = kvpair.val
-            self.__replicate(kvpair)
-        else:
-            if DEBUG and 1:
-                print("\tPut to another server...")
-            transport = TSocket.TSocket(ip, port);
-            transport = TTransport.TBufferedTransport(transport)
-            protocol = TBinaryProtocol.TBinaryProtocol(transport)
-            client = KVStore.Client(protocol)
-            transport.open()
-            client.put(kvpair, clevel)
-            transport.close()
 
-    def __replicate(self, kvpair):
-# TODO: consistency level replication logic
+        # Partitioner
+        partition = 0
+        for i in range(slen):
+            if kvpair.key >= partition and kvpair.key < partition + (MAXKEY//(slen)):
+                id0 = self.servers[i][0] #, ip0, port0 = self.servers[i][0], self.servers[i][1], self.servers[i][2];
+                if DEBUG and 1:
+                    print("\tkey", kvpair.key, "goes to server at id", id0);
+            partition += MAXKEY//slen
+
+        # Write to replicas
+        for i in range(3):
+            idx = (id0+i) % len(self.servers)
+            id, ip, port = self.servers[idx][0], self.servers[idx][1], self.servers[idx][2]
+            # if DEBUG and 1:
+            # if ip == self.meta.ip and port == self.meta.port:
+            if id == self.meta.id:
+                if DEBUG and 1:
+                    print("\tBase case: put to this server")
+                self.put_local(kvpair, clevel) # self.kvstore[kvpair.key] = kvpair.val
+                # self.__replicate(kvpair, clevel)
+            else:
+                if DEBUG and 1:
+                    print("\tPut to another server...")
+                transport = TSocket.TSocket(ip, port);
+                transport = TTransport.TBufferedTransport(transport)
+                protocol = TBinaryProtocol.TBinaryProtocol(transport)
+                client = KVStore.Client(protocol)
+                transport.open()
+                client.put_local(kvpair, clevel)
+                transport.close()
+
+    def put_local(self, kvpair, clevel):
         if DEBUG and 1:
-            print("\t\t__replicate(", kvpair, ")")
+            print("\t\tput_local at", self.meta.id, self.meta.ip, self.meta.port)
+        self.__writeToCommitLog(kvpair, time.time())
+        self.kvstore[kvpair.key] = kvpair.val
 
     def __populateKvstoreFromCommitLog(self):
-        file = pathlib.Path('commit_log')
+        filename = 'commit_log' + str(self.meta.id)
+        file = pathlib.Path(filename)
         if file.exists():
-            with open('commit_log', 'r') as f:
+            with open(filename, 'r') as f:
                 data = json.load(f)
                 temp = data['commit_log']
                 for l in temp:
@@ -101,16 +111,19 @@ class KVStoreHandler:
             print("Contents of kvstore:", self.kvstore)
 
     def __writeToCommitLog(self, kvpair, timestamp):
-        file = pathlib.Path('commit_log')
+        filename = 'commit_log' + str(self.meta.id)
+        if DEBUG and 0:
+            print("commit filename", filename)
+        file = pathlib.Path(filename)
         if file.exists():
-            with open('commit_log', 'r') as f:
+            with open(filename, 'r') as f:
                 data = json.load(f)
                 temp = data['commit_log']
                 temp.append({"key":kvpair.key, "val":kvpair.val, "time":timestamp})
-            with open('commit_log', 'w') as f:    
+            with open(filename, 'w') as f:    
                 json.dump(data,f)
         else:
-            with open('commit_log', 'w') as f:
+            with open(filename, 'w') as f:
                 json.dump({"commit_log": [ {"key":kvpair.key, "val":kvpair.val, "time":timestamp} ] }, f)
 
 def getIP():

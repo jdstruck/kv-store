@@ -1,30 +1,23 @@
 #!/usr/bin/env python
 
-# import glob
+import glob
 import sys
 sys.path.append('gen-py')
 # sys.path.insert(0, glob.glob('/home/cs557-inst/thrift-0.13.0/lib/py/build/lib*')[0])
-# from chord import FileStore
 from kvstore import KVStore
-
-from kvstore.ttypes import KVPair, NodeID #, RFile, RFileMetadata, SystemException
-
+from kvstore.ttypes import KVPair, NodeID, GetRet #, RFile, RFileMetadata, SystemException
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 from thrift.server import TServer
-
 import json
 import pathlib
 import re
 import socket
-# import hashlib
 import time
 
 MAXKEY = 256
-
 DEBUG = True 
-
 
 def create_node(s):
     m=re.match('([^:]+):([^:]+)',s)
@@ -44,9 +37,9 @@ class KVStoreHandler:
         if DEBUG:
             print("get", key)
         if(key in self.kvstore):
-            return self.kvstore[key], True
+            return GetRet(self.kvstore[key], True)
         else:
-            return "", False
+            return GetRet("", False)
 
     def put(self, kvpair, clevel):
         if DEBUG and 1:
@@ -105,7 +98,7 @@ class KVStoreHandler:
                 temp = data['commit_log']
                 for l in temp:
                     self.kvstore[l['key']] = l['val']
-        if DEBUG and 0:
+        if DEBUG and 1:
             print("Populating kvstore from commit_log...")
             print("Contents of kvstore:", self.kvstore)
 

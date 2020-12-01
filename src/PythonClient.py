@@ -36,10 +36,11 @@ def main():
 
     # Connect!
     transport.open()
-    # filename = sys.argv[3]
-    # content = filename + "'s content"
-    # file = RFile(RFileMetadata(filename, 0), content)
+
+    # Main program loop (CTRL-C to exit)
     while (True):
+
+        # Choose get (1) or put (2)
         inputstr = input('Enter 1 for get(), 2 for put()\n')
         try:
             func = int(inputstr)
@@ -62,11 +63,16 @@ def main():
             if(key < 0 or key > 255):
                 print("> Error:", key, "is not between 0 and 255")
             else:
-                val =  client.get(key, QUORUM)
-                # assert(client.get(key, QUORUM) == val)
-                print("Value =", val)
-                print()
-                print("Press CTRL-C to exit, or...")
+                getret = client.get(key, QUORUM)
+                val = getret.val
+                ret = getret.ret
+                if ret:
+                    print(ret)
+                    print("\nValue =", val)
+                else:
+                    print("\nValue for key", key, "not found")
+
+                print("\nPress CTRL-C to exit, or...")
 
         # put()
         else:
@@ -83,7 +89,7 @@ def main():
                 val = input("Enter a string of characters: ")
                 client.put(KVPair(key, val), QUORUM)
                 # assert(client.get(key, QUORUM) == val)
-                print("Success!\n")
+                print("\nSuccess!\n")
                 print("Press CTRL-C to exit, or...")
 
     transport.close()

@@ -21,8 +21,8 @@ DEBUG = True
 
 def create_node(s):
     m=re.match('([^:]+):([^:]+)',s)
-    u = (m.group(1),int(m.group(2)))
-    return u
+    nodes = (m.group(1),int(m.group(2)))
+    return nodes
 
 class KVStoreHandler:
 
@@ -34,6 +34,7 @@ class KVStoreHandler:
         
     def get(self, key, clevel):
 # TODO: consistency level retrieval logic
+# TODO: Try/Finally to continue replication after returning value?
         if DEBUG:
             print("get", key)
         if(key in self.kvstore):
@@ -45,22 +46,23 @@ class KVStoreHandler:
         if DEBUG and 1:
             print("\nput called at", self.meta.ip, self.meta.port, "key:", str(kvpair.key), "at time", time.time())
 
-        slen = len(self.servers)
-        if DEBUG and 0:
-            print("num of servers", slen, "kvpair.key", kvpair.key)
+        # slen = len(self.servers)
+        # if DEBUG and 0:
+            # print("num of servers", slen, "kvpair.key", kvpair.key)
 
         # Partitioner
         # - Divide and portion range by number of servers
-        partition = 0
-        for i in range(slen):
-            if kvpair.key >= partition and kvpair.key < partition + (MAXKEY//(slen)):
-                id0 = self.servers[i][0] #, ip0, port0 = self.servers[i][0], self.servers[i][1], self.servers[i][2];
-                if DEBUG and 1:
-                    print("\tkey", kvpair.key, "goes to server at id", id0);
-            partition += MAXKEY//slen
+        # partition = 0
+        # for i in range(slen):
+        #     if kvpair.key >= partition and kvpair.key < partition + (MAXKEY//(slen)):
+        #         id0 = self.servers[i][0] #, ip0, port0 = self.servers[i][0], self.servers[i][1], self.servers[i][2];
+        #         if DEBUG and 1:
+        #             print("\tkey", kvpair.key, "goes to server at id", id0);
+        #     partition += MAXKEY//slen
 
         # Write to replicas 
         # - Start at server chosen by partitioner, then next two in order 
+        id0 = self.__partition(kvpair.key)
         for i in range(3):
             idx = (id0+i) % len(self.servers)
             id, ip, port = self.servers[idx][0], self.servers[idx][1], self.servers[idx][2]
@@ -82,6 +84,21 @@ class KVStoreHandler:
                 transport.open()
                 client.put_local(kvpair, clevel)
                 transport.close()
+
+    def __partition(self, key):
+        slen = len(self.servers)
+        if DEBUG and 0:
+            print("Partitioner\n\tnum of servers", slen, "pair.key", key)
+
+        # Divide and portion range by number of servers
+        partition = 0
+        for i in range(slen):
+            if key >= partition and key < partition + (MAXKEY//(slen)):
+                id = self.servers[i][0] #, ip0, port0 = self.servers[i][0], self.servers[i][1], self.servers[i][2];
+                if DEBUG and 1:
+                    print("\tkey", key, "goes to server at id", id);
+            partition += MAXKEY//slen
+        return id
 
     def put_local(self, kvpair, clevel):
         if DEBUG and 1:

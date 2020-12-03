@@ -63,12 +63,13 @@ class KVStoreHandler:
     def _get(self, key):
         p(1, "\t\t_get from %d %s %d" % (self.meta.id, self.meta.ip, self.meta.port))
         if key in self.kvstore:
-            return GetRetTime(self.kvstore[key], True, str(self.kvtime[key]))
+            return GetRetTime(self.kvstore[key], True, self.kvtime[key])
         else:
             return GetRetTime('', False, '')
 
     def __getFromReplicas(self, key, clevel):
         clevel_str = "ONE" if clevel == ONE else "QUORUM"
+        getlist = []
         id0 = self.__partition(key)
         p(1, "\tGet key %d at consistency level %s from server %d" % (key, clevel_str, id0))
         servers_reached = 0
@@ -82,6 +83,7 @@ class KVStoreHandler:
                 p(1, "\t\tGet from this server")
                 # ret = self._get(key, clevel)
                 ret = self._get(key)
+                getlist.append(ret)
                 servers_reached = servers_reached + 1
 
             # Otherwise send to remote server
@@ -94,15 +96,18 @@ class KVStoreHandler:
                 try:
                     transport.open()
                     ret = client._get(key)
+                    getlist.append(ret)
                 except:
                     print("\t\t\tserver not found")
                 else:
                     servers_reached = servers_reached + 1
                 transport.close()
         p(1, ("\t%d servers reached" % servers_reached))
+        print("ret", ret)
+        print("getlist", getlist)
         if (clevel == ONE and servers_reached >= 1) or (clevel == QUORUM and servers_reached >= 2):
             p(1, ("\tconsistency level %s achieved" % "ONE" if clevel == ONE else "QUORUM"))
-            return ret 
+            return GetRet(ret.val, ret.ret) 
         else:
             raise SystemException("Consistently level %s not achieved" % clevel_str)
 
@@ -146,16 +151,19 @@ class KVStoreHandler:
                 transport.close()
         p(1, ("\t%d servers reached clevel %d" % (servers_reached, clevel)))
         if (clevel == ONE and servers_reached >= 1) or (clevel == QUORUM and servers_reached >= 2):
-            p(1, ("\tconsistency level %s achieved" % "\tONE" if clevel == ONE else "\tQUORUM"))
+            p(1, ("\tconsistency level %s achieved" % "ONE" if clevel == ONE else "QUORUM"))
             return True
         else:
             raise SystemException("Consistently level %s not achieved" % clevel_str)
 
     def _put(self, kvpair, clevel):
         p(1, "\t\t_put at %d %s %d" % (self.meta.id, self.meta.ip, self.meta.port))
-        self.__writeToCommitLog(kvpair, time.time())
+        t = time.time()
+        print(t)
+        self.__writeToCommitLog(kvpair, t)
         self.kvstore[kvpair.key] = kvpair.val
-        self.kvtime[kvpair.key] = time.time()
+        self.kvtime[kvpair.key] = t
+        print("self.kvtime[key]", self.kvtime[kvpair.key])
 
     def __populateKvstoreFromCommitLog(self):
         filename = 'commit_log' + str(self.meta.id)
@@ -166,9 +174,11 @@ class KVStoreHandler:
                 temp = data['commit_log']
                 for l in temp:
                     self.kvstore[l['key']] = l['val']
+                    self.kvtime[l['key']] = l['time']
         if DEBUG and 1:
             p(1, "Populating kvstore from commit_log...")
             p(1, "Contents of kvstore: %s" % self.kvstore)
+            p(1, "Contents of kvtime: %s" % self.kvtime)
 
     def __writeToCommitLog(self, kvpair, timestamp):
         filename = 'commit_log' + str(self.meta.id)

@@ -31,7 +31,7 @@ struct GetRet {
 struct GetRetTime {
   1: string val;
   2: bool ret;
-  3: string time;
+  3: double time;
 }
 
 service KVStore {

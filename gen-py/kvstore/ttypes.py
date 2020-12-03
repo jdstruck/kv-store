@@ -339,8 +339,8 @@ class GetRetTime(object):
                 else:
                     iprot.skip(ftype)
             elif fid == 3:
-                if ftype == TType.STRING:
-                    self.time = iprot.readString().decode('utf-8', errors='replace') if sys.version_info[0] == 2 else iprot.readString()
+                if ftype == TType.DOUBLE:
+                    self.time = iprot.readDouble()
                 else:
                     iprot.skip(ftype)
             else:
@@ -362,8 +362,8 @@ class GetRetTime(object):
             oprot.writeBool(self.ret)
             oprot.writeFieldEnd()
         if self.time is not None:
-            oprot.writeFieldBegin('time', TType.STRING, 3)
-            oprot.writeString(self.time.encode('utf-8') if sys.version_info[0] == 2 else self.time)
+            oprot.writeFieldBegin('time', TType.DOUBLE, 3)
+            oprot.writeDouble(self.time)
             oprot.writeFieldEnd()
         oprot.writeFieldStop()
         oprot.writeStructEnd()
@@ -410,7 +410,7 @@ GetRetTime.thrift_spec = (
     None,  # 0
     (1, TType.STRING, 'val', 'UTF8', None, ),  # 1
     (2, TType.BOOL, 'ret', None, None, ),  # 2
-    (3, TType.STRING, 'time', 'UTF8', None, ),  # 3
+    (3, TType.DOUBLE, 'time', None, None, ),  # 3
 )
 fix_spec(all_structs)
 del all_structs

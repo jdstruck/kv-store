@@ -98,7 +98,7 @@ class KVStoreHandler:
                     ret = client._get(key)
                     getlist.append(ret)
                 except:
-                    print("\t\t\tserver not found")
+                    print("\t\t\tServer %d %s:%d not found" % (id, ip, port))
                 else:
                     servers_reached = servers_reached + 1
                 transport.close()
@@ -125,6 +125,7 @@ class KVStoreHandler:
         id0 = self.__partition(kvpair.key)
         p(1, "\tPut kvpair %s at consistency level %s to server %d" % (kvpair.key, clevel_str, id0))
         servers_reached = 0
+        failed_servers = []
         for i in range(3):
             idx = (id0+i) % len(self.servers)
             id, ip, port = self.servers[idx][0], self.servers[idx][1], self.servers[idx][2]
@@ -146,10 +147,8 @@ class KVStoreHandler:
                     transport.open()
                     client._put(kvpair, clevel)
                 except:
-                    print("\t\t\tServer %d %s:%d not found" % (self.meta.id, self.meta.ip, self.meta.port))
-
-                    # Hinted handoff
-
+                    print("\t\t\tServer %d %s:%d not found" % (id, ip, port))
+                    failed_servers.append(id)
 
                 else:
                     servers_reached = servers_reached + 1
@@ -157,6 +156,16 @@ class KVStoreHandler:
         p(1, ("\t%d servers reached clevel %d" % (servers_reached, clevel)))
         if (clevel == ONE and servers_reached >= 1) or (clevel == QUORUM and servers_reached >= 2):
             p(1, ("\tconsistency level %s achieved" % "ONE" if clevel == ONE else "QUORUM"))
+            if len(failed_servers) > 0:            
+                # Store hinted handoff
+                for i in failed_servers:
+                    if i in self.hinted:
+                        kv = self.hinted[i]
+                        kv.append((kvpair.key, kvpair.val))
+                        self.hinted[i] = kv 
+                    else:
+                        self.hinted[i] = [(kvpair.key, kvpair.val)]
+                    p(1, "\t\tHinted handoff to server %d, contents of self.hinted %s" % (i, self.hinted))
             return True
         else:
             raise SystemException("Consistently level %s not achieved" % clevel_str)

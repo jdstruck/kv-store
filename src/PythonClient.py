@@ -16,25 +16,18 @@ from thrift.protocol import TBinaryProtocol
 import hashlib
 
 
-QUORUM = 0
-ONE = 1
+ONE = 0
+QUORUM = 1
 
 def main():
     print(sys.argv[0])
     print(sys.argv[1:])
-    # Make socket
+
+    # Connect to KVStore Thrift server
     transport = TSocket.TSocket(sys.argv[1], int(sys.argv[2]))
-
-    # Buffering is critical. Raw sockets are very slow
     transport = TTransport.TBufferedTransport(transport)
-
-    # Wrap in a protocol
     protocol = TBinaryProtocol.TBinaryProtocol(transport)
-
-    # Create a client to use the protocol encoder
     client = KVStore.Client(protocol)
-
-    # Connect!
     transport.open()
 
     # Main program loop (CTRL-C to exit)
@@ -50,7 +43,18 @@ def main():
         if func < 1 or func > 2:
             print('> Error: you entered', inputstr + '.\n', 'Enter 1 for get(), 2 for put()')
             continue
-
+        
+        # Indicate consistenty level ONE (1) or QUORUM (2)
+        inputstr = input('Enter 1 for consistently level ONE, 2 for QUORUM\n')
+        try:
+            clevel = int(inputstr)
+        except ValueError:
+            print("> Error:","'" + inputstr + "'", "is not a number")
+            continue
+        if clevel < 1 or clevel > 2:
+            print('> Error: you entered', inputstr + '.\n', 'Enter 1 for get(), 2 for put()')
+            continue
+        
         # get()
         if func == 1:
             inputstr = input("Enter a number in range [0, 255]: ")
@@ -59,11 +63,10 @@ def main():
             except ValueError:
                 print("> Error:","'" + inputstr + "'", "is not a number")
                 continue
-
             if(key < 0 or key > 255):
                 print("> Error:", key, "is not between 0 and 255")
             else:
-                getret = client.get(key, QUORUM)
+                getret = client.get(key, clevel-1)
                 val = getret.val
                 ret = getret.ret
                 if ret:
@@ -87,8 +90,7 @@ def main():
                 print("> Error:", key, "is not between 0 and 255")
             else:
                 val = input("Enter a string of characters: ")
-                client.put(KVPair(key, val), QUORUM)
-                # assert(client.get(key, QUORUM) == val)
+                client.put(KVPair(key, val), clevel-1)
                 print("\nSuccess!\n")
                 print("Press CTRL-C to exit, or...")
 

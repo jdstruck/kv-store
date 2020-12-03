@@ -5,7 +5,7 @@ import sys
 sys.path.append('gen-py')
 # sys.path.insert(0, glob.glob('/home/cs557-inst/thrift-0.13.0/lib/py/build/lib*')[0])
 from kvstore import KVStore
-from kvstore.ttypes import KVPair, NodeID, GetRet #, RFile, RFileMetadata, SystemException
+from kvstore.ttypes import KVPair, NodeID, GetRet, SystemException #, RFile, RFileMetadata, 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
@@ -17,7 +17,13 @@ import socket
 import time
 
 MAXKEY = 256
+ONE = 0
+QUORUM = 1
 DEBUG = True 
+
+def p(b, msg):
+    if DEBUG and b:
+        print(msg)
 
 def create_node(s):
     m=re.match('([^:]+):([^:]+)',s)
@@ -31,78 +37,116 @@ class KVStoreHandler:
         self.kvstore = {}
         self.servers = servers
         self.__populateKvstoreFromCommitLog()
-        
-    def get(self, key, clevel):
-# TODO: consistency level retrieval logic
-# TODO: Try/Finally to continue replication after returning value?
-        if DEBUG:
-            print("get", key)
-        if(key in self.kvstore):
-            return GetRet(self.kvstore[key], True)
-        else:
-            return GetRet("", False)
-
-    def put(self, kvpair, clevel):
-        if DEBUG and 1:
-            print("\nput called at", self.meta.ip, self.meta.port, "key:", str(kvpair.key), "at time", time.time())
-
-        # slen = len(self.servers)
-        # if DEBUG and 0:
-            # print("num of servers", slen, "kvpair.key", kvpair.key)
-
-        # Partitioner
-        # - Divide and portion range by number of servers
-        # partition = 0
-        # for i in range(slen):
-        #     if kvpair.key >= partition and kvpair.key < partition + (MAXKEY//(slen)):
-        #         id0 = self.servers[i][0] #, ip0, port0 = self.servers[i][0], self.servers[i][1], self.servers[i][2];
-        #         if DEBUG and 1:
-        #             print("\tkey", kvpair.key, "goes to server at id", id0);
-        #     partition += MAXKEY//slen
-
-        # Write to replicas 
-        # - Start at server chosen by partitioner, then next two in order 
-        id0 = self.__partition(kvpair.key)
-        for i in range(3):
-            idx = (id0+i) % len(self.servers)
-            id, ip, port = self.servers[idx][0], self.servers[idx][1], self.servers[idx][2]
-
-            # Write locally if this server
-            if id == self.meta.id:
-                if DEBUG and 1:
-                    print("\tBase case: put to this server")
-                self.put_local(kvpair, clevel)
-
-            # Otherwise send to remote server
-            else:
-                if DEBUG and 1:
-                    print("\tPut to another server...")
-                transport = TSocket.TSocket(ip, port);
-                transport = TTransport.TBufferedTransport(transport)
-                protocol = TBinaryProtocol.TBinaryProtocol(transport)
-                client = KVStore.Client(protocol)
-                transport.open()
-                client.put_local(kvpair, clevel)
-                transport.close()
+        self.getval = ""
 
     def __partition(self, key):
         slen = len(self.servers)
-        if DEBUG and 0:
-            print("Partitioner\n\tnum of servers", slen, "pair.key", key)
+        p(1, "\tPartitioner: %d servers, key %d, MAXKEY %d" % (slen, key, MAXKEY-1))
 
         # Divide and portion range by number of servers
         partition = 0
         for i in range(slen):
             if key >= partition and key < partition + (MAXKEY//(slen)):
                 id = self.servers[i][0] #, ip0, port0 = self.servers[i][0], self.servers[i][1], self.servers[i][2];
-                if DEBUG and 1:
-                    print("\tkey", key, "goes to server at id", id);
+                p(1, "\tkey " + str(key) + " goes to server at id " + str(id));
             partition += MAXKEY//slen
         return id
 
-    def put_local(self, kvpair, clevel):
-        if DEBUG and 1:
-            print("\t\tput_local at", self.meta.id, self.meta.ip, self.meta.port)
+    def get(self, key, clevel):
+# TODO: consistency level retrieval logic
+# TODO: Try/Finally to continue replication after returning value?
+        p(1, "get(" + str(key) + ") called")
+        return self.__getFromReplicas(key, clevel)
+
+    def _get(self, key):
+        p(1, "\t\t_get from %d %s %d" % (self.meta.id, self.meta.ip, self.meta.port))
+        if key in self.kvstore:
+            return GetRet(self.kvstore[key], True)
+        else:
+            return GetRet('', False)
+
+    def __getFromReplicas(self, key, clevel):
+        clevel_str = "ONE" if clevel == ONE else "QUORUM"
+        id0 = self.__partition(key)
+        p(1, "\tGet key %d at consistency level %s from server %d" % (key, clevel_str, id0))
+        servers_reached = 0
+        for i in range(3):
+            idx = (id0+i) % len(self.servers)
+            id, ip, port = self.servers[idx][0], self.servers[idx][1], self.servers[idx][2]
+            p(1, "%d %s:%d" % (id, ip, port))
+
+            # Write locally if this server
+            if id == self.meta.id:
+                p(1, "\t\tGet from this server")
+                # ret = self._get(key, clevel)
+                ret = self._get(key)
+                servers_reached = servers_reached + 1
+
+            # Otherwise send to remote server
+            else:
+                p(1, "\t\tGet from another server...")
+                transport = TSocket.TSocket(ip, port);
+                transport = TTransport.TBufferedTransport(transport)
+                protocol = TBinaryProtocol.TBinaryProtocol(transport)
+                client = KVStore.Client(protocol)
+                try:
+                    transport.open()
+                    ret = client._get(key)
+                except:
+                    print("\t\t\tserver not found")
+                else:
+                    servers_reached = servers_reached + 1
+                transport.close()
+        p(1, ("\t%d servers reached" % servers_reached))
+        if (clevel == ONE and servers_reached >= 1) or (clevel == QUORUM and servers_reached >= 2):
+            p(1, ("\tconsistency level %s achieved" % "ONE" if clevel == ONE else "QUORUM"))
+            return ret 
+        else:
+            raise SystemException("Consistently level %s not achieved" % clevel_str)
+
+    def put(self, kvpair, clevel):
+        p(1, ("\nput called at %s %d key: %s at time %s" % (self.meta.ip, self.meta.port, str(kvpair.key), str(time.time()))))
+        self.__storeAndReplicate(kvpair, clevel)
+
+    def __storeAndReplicate(self, kvpair, clevel):
+        clevel_str = "ONE" if clevel == ONE else "QUORUM"
+        id0 = self.__partition(kvpair.key)
+        p(1, "\tPut kvpair %s at consistency level %s to server %d" % (kvpair.key, clevel_str, id0))
+        servers_reached = 0
+        for i in range(3):
+            idx = (id0+i) % len(self.servers)
+            id, ip, port = self.servers[idx][0], self.servers[idx][1], self.servers[idx][2]
+
+            # Write locally if this server
+            if id == self.meta.id:
+                p(1, "\t\tPut to this server")
+                self._put(kvpair, clevel)
+                servers_reached = servers_reached + 1
+
+            # Otherwise send to remote server
+            else:
+                p(1, "\t\tPut to another server...")
+                transport = TSocket.TSocket(ip, port);
+                transport = TTransport.TBufferedTransport(transport)
+                protocol = TBinaryProtocol.TBinaryProtocol(transport)
+                client = KVStore.Client(protocol)
+                try:
+                    transport.open()
+                    client._put(kvpair, clevel)
+                except:
+                    print("\t\t\tserver not found")
+                else:
+                    servers_reached = servers_reached + 1
+                transport.close()
+        p(1, ("\t%d servers reached clevel %d" % (servers_reached, clevel)))
+        if (clevel == ONE and servers_reached >= 1) or (clevel == QUORUM and servers_reached >= 2):
+            p(1, ("\tconsistency level %s achieved" % "\tONE" if clevel == ONE else "\tQUORUM"))
+            return True
+        else:
+            raise SystemException("Consistently level %s not achieved" % clevel_str)
+
+    def _put(self, kvpair, clevel):
+        p(1, "\t\t_put at %d %s %d" % (self.meta.id, self.meta.ip, self.meta.port))
         self.__writeToCommitLog(kvpair, time.time())
         self.kvstore[kvpair.key] = kvpair.val
 
@@ -116,8 +160,8 @@ class KVStoreHandler:
                 for l in temp:
                     self.kvstore[l['key']] = l['val']
         if DEBUG and 1:
-            print("Populating kvstore from commit_log...")
-            print("Contents of kvstore:", self.kvstore)
+            p(1, "Populating kvstore from commit_log...")
+            p(1, "Contents of kvstore: %s" % self.kvstore)
 
     def __writeToCommitLog(self, kvpair, timestamp):
         filename = 'commit_log' + str(self.meta.id)

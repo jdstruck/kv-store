@@ -33,10 +33,16 @@ service KVStore {
   GetRet get(1: i32 key, 2: i32 clevel)
     throws (1: SystemException systemException),
 
+  GetRet _get(1: i32 key)
+    throws (1: SystemException systemException),
+    
+  bool _key_in_store(1: i32 key)
+    throws (1: SystemException systemException),
+
   void put(1: KVPair kvpair, 2: i32 clevel)
     throws (1: SystemException systemException),
 
-  void put_local(1: KVPair kvpair, 2: i32 clevel)
+  void _put(1: KVPair kvpair, 2: i32 clevel)
     throws (1: SystemException systemException),
  
   /* void writeFile(1: RFile rFile) */

@@ -302,6 +302,85 @@ class GetRet(object):
 
     def __ne__(self, other):
         return not (self == other)
+
+
+class GetRetTime(object):
+    """
+    Attributes:
+     - val
+     - ret
+     - time
+
+    """
+
+
+    def __init__(self, val=None, ret=None, time=None,):
+        self.val = val
+        self.ret = ret
+        self.time = time
+
+    def read(self, iprot):
+        if iprot._fast_decode is not None and isinstance(iprot.trans, TTransport.CReadableTransport) and self.thrift_spec is not None:
+            iprot._fast_decode(self, iprot, [self.__class__, self.thrift_spec])
+            return
+        iprot.readStructBegin()
+        while True:
+            (fname, ftype, fid) = iprot.readFieldBegin()
+            if ftype == TType.STOP:
+                break
+            if fid == 1:
+                if ftype == TType.STRING:
+                    self.val = iprot.readString().decode('utf-8', errors='replace') if sys.version_info[0] == 2 else iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 2:
+                if ftype == TType.BOOL:
+                    self.ret = iprot.readBool()
+                else:
+                    iprot.skip(ftype)
+            elif fid == 3:
+                if ftype == TType.STRING:
+                    self.time = iprot.readString().decode('utf-8', errors='replace') if sys.version_info[0] == 2 else iprot.readString()
+                else:
+                    iprot.skip(ftype)
+            else:
+                iprot.skip(ftype)
+            iprot.readFieldEnd()
+        iprot.readStructEnd()
+
+    def write(self, oprot):
+        if oprot._fast_encode is not None and self.thrift_spec is not None:
+            oprot.trans.write(oprot._fast_encode(self, [self.__class__, self.thrift_spec]))
+            return
+        oprot.writeStructBegin('GetRetTime')
+        if self.val is not None:
+            oprot.writeFieldBegin('val', TType.STRING, 1)
+            oprot.writeString(self.val.encode('utf-8') if sys.version_info[0] == 2 else self.val)
+            oprot.writeFieldEnd()
+        if self.ret is not None:
+            oprot.writeFieldBegin('ret', TType.BOOL, 2)
+            oprot.writeBool(self.ret)
+            oprot.writeFieldEnd()
+        if self.time is not None:
+            oprot.writeFieldBegin('time', TType.STRING, 3)
+            oprot.writeString(self.time.encode('utf-8') if sys.version_info[0] == 2 else self.time)
+            oprot.writeFieldEnd()
+        oprot.writeFieldStop()
+        oprot.writeStructEnd()
+
+    def validate(self):
+        return
+
+    def __repr__(self):
+        L = ['%s=%r' % (key, value)
+             for key, value in self.__dict__.items()]
+        return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
 all_structs.append(SystemException)
 SystemException.thrift_spec = (
     None,  # 0
@@ -325,6 +404,13 @@ GetRet.thrift_spec = (
     None,  # 0
     (1, TType.STRING, 'val', 'UTF8', None, ),  # 1
     (2, TType.BOOL, 'ret', None, None, ),  # 2
+)
+all_structs.append(GetRetTime)
+GetRetTime.thrift_spec = (
+    None,  # 0
+    (1, TType.STRING, 'val', 'UTF8', None, ),  # 1
+    (2, TType.BOOL, 'ret', None, None, ),  # 2
+    (3, TType.STRING, 'time', 'UTF8', None, ),  # 3
 )
 fix_spec(all_structs)
 del all_structs

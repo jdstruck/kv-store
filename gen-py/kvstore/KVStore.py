@@ -641,7 +641,7 @@ class _get_result(object):
                 break
             if fid == 0:
                 if ftype == TType.STRUCT:
-                    self.success = GetRet()
+                    self.success = GetRetTime()
                     self.success.read(iprot)
                 else:
                     iprot.skip(ftype)
@@ -686,7 +686,7 @@ class _get_result(object):
         return not (self == other)
 all_structs.append(_get_result)
 _get_result.thrift_spec = (
-    (0, TType.STRUCT, 'success', [GetRet, None], None, ),  # 0
+    (0, TType.STRUCT, 'success', [GetRetTime, None], None, ),  # 0
     (1, TType.STRUCT, 'systemException', [SystemException, None], None, ),  # 1
 )
 

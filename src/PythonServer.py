@@ -5,7 +5,7 @@ import sys
 sys.path.append('gen-py')
 # sys.path.insert(0, glob.glob('/home/cs557-inst/thrift-0.13.0/lib/py/build/lib*')[0])
 from kvstore import KVStore
-from kvstore.ttypes import KVPair, NodeID, GetRet, SystemException #, RFile, RFileMetadata, 
+from kvstore.ttypes import KVPair, NodeID, GetRet, GetRetTime, SystemException #, RFile, RFileMetadata, 
 from thrift.transport import TSocket
 from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
@@ -35,6 +35,8 @@ class KVStoreHandler:
     def __init__(self, id=None, ip=None, port=None, servers=None):
         self.meta = NodeID(id, ip, int(port))
         self.kvstore = {}
+        self.kvtime = {}
+        self.hinted = {}
         self.servers = servers
         self.__populateKvstoreFromCommitLog()
         self.getval = ""
@@ -61,9 +63,9 @@ class KVStoreHandler:
     def _get(self, key):
         p(1, "\t\t_get from %d %s %d" % (self.meta.id, self.meta.ip, self.meta.port))
         if key in self.kvstore:
-            return GetRet(self.kvstore[key], True)
+            return GetRetTime(self.kvstore[key], True, str(self.kvtime[key]))
         else:
-            return GetRet('', False)
+            return GetRetTime('', False, '')
 
     def __getFromReplicas(self, key, clevel):
         clevel_str = "ONE" if clevel == ONE else "QUORUM"
@@ -134,7 +136,11 @@ class KVStoreHandler:
                     transport.open()
                     client._put(kvpair, clevel)
                 except:
-                    print("\t\t\tserver not found")
+                    print("\t\t\tServer %d %s:%d not found" % (self.meta.id, self.meta.ip, self.meta.port))
+
+                    # Hinted handoff
+
+
                 else:
                     servers_reached = servers_reached + 1
                 transport.close()
@@ -149,6 +155,7 @@ class KVStoreHandler:
         p(1, "\t\t_put at %d %s %d" % (self.meta.id, self.meta.ip, self.meta.port))
         self.__writeToCommitLog(kvpair, time.time())
         self.kvstore[kvpair.key] = kvpair.val
+        self.kvtime[kvpair.key] = time.time()
 
     def __populateKvstoreFromCommitLog(self):
         filename = 'commit_log' + str(self.meta.id)

@@ -28,12 +28,18 @@ struct GetRet {
   2: bool ret;
 }
 
+struct GetRetTime {
+  1: string val;
+  2: bool ret;
+  3: string time;
+}
+
 service KVStore {
 
   GetRet get(1: i32 key, 2: i32 clevel)
     throws (1: SystemException systemException),
 
-  GetRet _get(1: i32 key)
+  GetRetTime _get(1: i32 key)
     throws (1: SystemException systemException),
     
   bool _key_in_store(1: i32 key)

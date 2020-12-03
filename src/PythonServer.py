@@ -103,11 +103,16 @@ class KVStoreHandler:
                     servers_reached = servers_reached + 1
                 transport.close()
         p(1, ("\t%d servers reached" % servers_reached))
-        print("ret", ret)
-        print("getlist", getlist)
         if (clevel == ONE and servers_reached >= 1) or (clevel == QUORUM and servers_reached >= 2):
             p(1, ("\tconsistency level %s achieved" % "ONE" if clevel == ONE else "QUORUM"))
-            return GetRet(ret.val, ret.ret) 
+            most_recent = 0
+            for i, l in enumerate(getlist):
+                if l.time > getlist[most_recent].time:
+                    most_recent = i
+
+            print(getlist)
+            print(getlist[most_recent])
+            return GetRet(getlist[most_recent].val, getlist[most_recent].ret) 
         else:
             raise SystemException("Consistently level %s not achieved" % clevel_str)
 

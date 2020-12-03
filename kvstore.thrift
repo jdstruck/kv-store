@@ -23,6 +23,11 @@ struct KVPair {
   2: string val;
 }
 
+struct KVPairHinted {
+  1: i32 key;
+  2: string val;
+}
+
 struct GetRet {
   1: string val;
   2: bool ret;
@@ -31,7 +36,7 @@ struct GetRet {
 struct GetRetTime {
   1: string val;
   2: bool ret;
-  3: double time;
+  3: optional double time;
 }
 
 service KVStore {
@@ -42,15 +47,14 @@ service KVStore {
   GetRetTime _get(1: i32 key)
     throws (1: SystemException systemException),
     
-  bool _key_in_store(1: i32 key)
-    throws (1: SystemException systemException),
-
   void put(1: KVPair kvpair, 2: i32 clevel)
     throws (1: SystemException systemException),
 
   void _put(1: KVPair kvpair, 2: i32 clevel)
     throws (1: SystemException systemException),
- 
+  
+  list<KVPair> _get_hints(1: i32 id)
+
   /* void writeFile(1: RFile rFile) */
   /*   throws (1: SystemException systemException), */
 
